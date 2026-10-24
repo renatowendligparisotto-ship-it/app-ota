@@ -1,0 +1,21 @@
+{
+  "name": "Central OTA",
+  "short_name": "OTA Master",
+  "start_url": "./Painel_OTA_PWA.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "description": "Painel de Gestão de Atualizações OTA",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2885/2885417.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2885/2885417.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Atualização (OTA) - Multi-Contas & GitHub</title>
+    <!-- Adicionando suporte PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding: 20px; }
+        .painel { background-color: #1e1e1e; border-radius: 12px; padding: 25px; margin: 15px auto; max-width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
+        select.seletor, input.input-texto { width: 100%; padding: 12px; font-size: 14px; border-radius: 8px; background-color: #333; color: white; border: 1px solid #555; box-sizing: border-box; margin-bottom: 5px; }
+        select.seletor { cursor: pointer; }
+        select.seletor option:disabled { color: #f44336; background-color: #2a2a2a; }
+        input.input-texto { cursor: text; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
+        .texto-versao { font-size: 13px; color: #04d361; font-weight: bold; margin-top: 5px; letter-spacing: 0.5px; }
+        .visor-modelo { background-color: #2c2c2c; color: #04d361; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 8px; border: 1px dashed #04d361; margin-bottom: 20px; letter-spacing: 1px; margin-top: 5px;}
+        .visor-erro { color: #f44336; border-color: #f44336; }
+        .btn { border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; transition: 0.2s; color: white; }
+        .btn:disabled { background-color: #555; cursor: not-allowed; }
+        .btn-ota { background-color: #ff9800; width: 100%; font-weight: bold; margin-top: 5px; }
+        .btn-ota:hover { background-color: #e68a00; }
+        .btn-add { background-color: #2196F3; width: 100%; font-size: 16px; margin: 5px 0;}
+        .btn-add:hover { background-color: #0b7dda; }
+        .btn-lixeira { background-color: #f44336; width: 50px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 20px;}
+        .btn-lixeira:hover { background-color: #da190b; }
+        .oculto { display: none; }
+        .dica { font-size: 13px; color: #a8a8b3; margin-top: 5px; margin-bottom: 8px; text-align: left; font-weight: bold; }
+        hr { border: 1px solid #333; margin: 20px 0; }
+        .linha-catalogo { display: flex; gap: 10px; margin-bottom: 15px; }
+        .aviso-inicial { background: #2c2c2c; padding: 20px; border-radius: 8px; color: #ff9800; font-weight: bold; margin: 20px auto; border: 1px dashed #ff9800; max-width: 400px; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+
+    <h1>Central de Atualização OTA</h1>
+
+    <div id="avisoSemConta" class="aviso-inicial">
+        👇 Adicione e selecione uma conta Firebase no painel abaixo para iniciar o sistema.
+    </div>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div id="areaTrabalho" class="oculto">
+        <div class="painel">
+            <h3>Selecione o Dispositivo</h3>
+            <select id="seletorDispositivos" class="seletor">
+                <option value="">A procurar dispositivos...</option>
+            </select>
+            <div id="visorVersao" class="texto-versao">Versão: A carregar...</div>
+        </div>
+
+        <div id="paineisControlo" class="oculto">
+            <div class="painel">
+                <h3>Firmwares do GitHub</h3>
+                
+                <p class="dica">Hardware da Placa Selecionada:</p>
+                <div class="visor-modelo" id="visorModelo">A aguardar reporte...</div>
+
+                <p class="dica">Ficheiros .bin filtrados (Auto):</p>
+                <select id="seletorCatalogo" class="seletor">
+                    <option value="">A carregar repositório...</option>
+                </select>
+                
+                <button id="btnAtualizarOTA" class="btn btn-ota">Atualizar Placa com Selecionado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL DE CONFIGURAÇÃO DO GITHUB -->
+    <div class="painel" style="border: 2px solid #9c27b0; margin-top: 20px;">
+        <h3 style="margin-top: 0; color: #9c27b0;">🐙 Repositório GitHub Automático</h3>
+        <p class="dica">Onde estão guardados os seus .bin (Tem de ser Público):</p>
+        <input type="text" id="inputGitUser" class="input-texto" placeholder="Utilizador GitHub (Ex: luanfrj)">
+        <input type="text" id="inputGitRepo" class="input-texto" placeholder="Nome do Repositório (Ex: esp-firmwares)">
+        <button id="btnSalvarGit" class="btn btn-add" style="background-color: #9c27b0;">Guardar Definições do GitHub</button>
+    </div>
+
+    <!-- PAINEL DE CONTAS FIREBASE -->
+    <div class="painel" style="border: 2px solid #2196F3;">
+        <h3 style="margin-top: 0; color: #2196F3;">🌐 Gerir Contas Firebase</h3>
+        
+        <div class="linha-catalogo">
+            <select id="seletorContas" class="seletor" style="margin-bottom: 0;">
+                <option value="">A carregar contas...</option>
+            </select>
+            <button id="btnRemoverConta" class="btn btn-lixeira" title="Remover Conta Selecionada" disabled>🗑️</button>
+        </div>
+
+        <hr style="border-color: #333; margin: 15px 0;">
+
+        <p class="dica">+ Adicionar Nova Conta:</p>
+        <input type="text" id="inputContaNome" class="input-texto" placeholder="Nome (Ex: Chácara 2)">
+        <input type="text" id="inputContaApi" class="input-texto" placeholder="API Key (Ex: AIzaSyB2...)">
+        <input type="text" id="inputContaUrl" class="input-texto" placeholder="URL da Base de Dados (Ex: https://...)">
+        <button id="btnAdicionarConta" class="btn btn-add" style="background-color: #4caf50;">Guardar e Ligar</button>
+    </div>
+
+    <script type="module">
+        // Registo do Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('ServiceWorker registado com sucesso:', registration.scope);
+                }).catch(error => {
+                    console.log('Falha ao registar o ServiceWorker:', error);
+                });
+            });
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // =========================================================================
+        // 0. CONFIGURAÇÕES DO GITHUB
+        // =========================================================================
+        const inputGitUser = document.getElementById('inputGitUser');
+        const inputGitRepo = document.getElementById('inputGitRepo');
+        const btnSalvarGit = document.getElementById('btnSalvarGit');
+        const seletorCatalogo = document.getElementById('seletorCatalogo');
+
+        let gitConfig = { user: '', repo: '' };
+        try {
+            const gitSalvo = localStorage.getItem('gitConfigOTA');
+            if(gitSalvo) gitConfig = JSON.parse(gitSalvo);
+        } catch (e) {}
+
+        inputGitUser.value = gitConfig.user;
+        inputGitRepo.value = gitConfig.repo;
+
+        btnSalvarGit.addEventListener('click', () => {
+            gitConfig.user = inputGitUser.value.trim();
+            gitConfig.repo = inputGitRepo.value.trim();
+            if(!gitConfig.user || !gitConfig.repo) { alert("Preencha o utilizador e o repositório do GitHub!"); return; }
+            localStorage.setItem('gitConfigOTA', JSON.stringify(gitConfig));
+            alert("Configurações do GitHub guardadas com sucesso!");
+            
+            const hd = document.getElementById('visorModelo').innerText;
+            if(hd !== "A aguardar reporte..." && hd !== "Não reportado!") {
+                carregarCatalogoGithub(hd);
+            }
+        });
+
+        // Função que lê a API do GitHub e APLICA O FILTRO DE HARDWARE
+        async function carregarCatalogoGithub(hardware) {
+            if (!gitConfig.user || !gitConfig.repo) {
+                seletorCatalogo.innerHTML = '<option value="">Configure os dados do GitHub abaixo 👇</option>';
+                return;
+            }
+
+            seletorCatalogo.innerHTML = '<option value="">A filtrar no GitHub... ⏳</option>';
+            const url = `https://api.github.com/repos/${gitConfig.user}/${gitConfig.repo}/contents/`;
+            
+            try {
+                const resposta = await fetch(url);
+                if (!resposta.ok) throw new Error("Erro HTTP: " + resposta.status);
+                
+                const arquivos = await resposta.json();
+                seletorCatalogo.innerHTML = '<option value="">-- Selecione o Firmware (.bin) --</option>';
+                
+                let arquivosEncontrados = 0;
+                let hw = hardware.toUpperCase();
+                
+                arquivos.forEach(arq => {
+                    if (arq.type === 'file' && arq.name.toLowerCase().endsWith('.bin')) {
+                        let nomeArq = arq.name.toUpperCase();
+                        let compativel = false;
+
+                        // Lógica do Filtro:
+                        if (hw.includes("S3")) {
+                            compativel = nomeArq.includes("S3");
+                        } 
+                        else if (hw.includes("C3")) {
+                            compativel = nomeArq.includes("C3");
+                        } 
+                        else {
+                            compativel = !nomeArq.includes("S3") && !nomeArq.includes("C3");
+                        }
+
+                        if (compativel) {
+                            const opt = document.createElement('option');
+                            opt.value = arq.download_url; 
+                            opt.text = arq.name;
+                            seletorCatalogo.appendChild(opt);
+                            arquivosEncontrados++;
+                        }
+                    }
+                });
+                
+                if (arquivosEncontrados === 0) {
+                    seletorCatalogo.innerHTML = '<option value="">Nenhum .bin compatível com ' + hardware + ' encontrado.</option>';
+                }
+            } catch (erro) {
+                seletorCatalogo.innerHTML = '<option value="">Erro ao ler GitHub</option>';
+                console.error(erro);
+            }
+        }
+
+        // =========================================================================
+        // 1. SISTEMA DE GESTÃO DE CONTAS
+        // =========================================================================
+        const seletorContas = document.getElementById('seletorContas');
+        const inputContaNome = document.getElementById('inputContaNome');
+        const inputContaApi = document.getElementById('inputContaApi');
+        const inputContaUrl = document.getElementById('inputContaUrl');
+        const btnAdicionarConta = document.getElementById('btnAdicionarConta');
+        const btnRemoverConta = document.getElementById('btnRemoverConta');
+        
+        const areaTrabalho = document.getElementById('areaTrabalho');
+        const avisoSemConta = document.getElementById('avisoSemConta');
+
+        let contasSalvas = {};
+        try {
+            const dadosLocais = localStorage.getItem('contasFirebaseOTA');
+            if (dadosLocais) contasSalvas = JSON.parse(dadosLocais);
+        } catch (e) {}
+        let contaAtivaId = localStorage.getItem('contaAtivaFirebaseOTA');
+
+        function renderizarContas() {
+            seletorContas.innerHTML = '<option value="">-- Escolha uma Conta Guardada --</option>';
+            Object.keys(contasSalvas).forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.text = contasSalvas[id].nome;
+                if(id === contaAtivaId) opt.selected = true;
+                seletorContas.appendChild(opt);
+            });
+            btnRemoverConta.disabled = !contaAtivaId;
+        }
+
+        renderizarContas();
+
+        btnAdicionarConta.addEventListener('click', () => {
+            const nome = inputContaNome.value.trim();
+            const api = inputContaApi.value.trim();
+            const url = inputContaUrl.value.trim();
+            if(!nome || !api || !url) { alert("Preencha todos os campos da conta!"); return; }
+            const novoId = 'conta_' + Date.now();
+            contasSalvas[novoId] = { nome: nome, apiKey: api, databaseURL: url };
+            localStorage.setItem('contasFirebaseOTA', JSON.stringify(contasSalvas));
+            localStorage.setItem('contaAtivaFirebaseOTA', novoId);
+            window.location.reload(); 
+        });
+
+        seletorContas.addEventListener('change', (e) => {
+            if(e.target.value === "") localStorage.removeItem('contaAtivaFirebaseOTA');
+            else localStorage.setItem('contaAtivaFirebaseOTA', e.target.value);
+            window.location.reload();
+        });
+
+        btnRemoverConta.addEventListener('click', () => {
+            if(!contaAtivaId) return;
+            if(confirm(`Apagar a conta "${contasSalvas[contaAtivaId].nome}"?`)) {
+                delete contasSalvas[contaAtivaId];
+                localStorage.setItem('contasFirebaseOTA', JSON.stringify(contasSalvas));
+                localStorage.removeItem('contaAtivaFirebaseOTA');
+                window.location.reload();
+            }
+        });
+
+        // =========================================================================
+        // 2. INICIALIZAÇÃO DO FIREBASE
+        // =========================================================================
+        if (contaAtivaId && contasSalvas[contaAtivaId]) {
+            const dadosConta = contasSalvas[contaAtivaId];
+            
+            try {
+                const app = initializeApp({ apiKey: dadosConta.apiKey, databaseURL: dadosConta.databaseURL });
+                const db = getDatabase(app);
+
+                avisoSemConta.classList.add('oculto');
+                areaTrabalho.classList.remove('oculto');
+
+                const seletorDispositivos = document.getElementById('seletorDispositivos');
+                const visorVersao = document.getElementById('visorVersao');
+                const paineisControlo = document.getElementById('paineisControlo');
+                const visorModelo = document.getElementById('visorModelo');
+                const btnAtualizarOTA = document.getElementById('btnAtualizarOTA');
+                
+                let dispositivoAtual = null;
+                let modeloDetectado = null; 
+                let otaTimeout = null;
+                const monitoramentoPlacas = {}; 
+                
+                let cancelarEscutaOTA = null;
+                let cancelarEscutaVersao = null; 
+                let cancelarEscutaModelo = null;
+                let ultimoModeloRenderizado = null; 
+
+                onValue(ref(db, 'chacara/dispositivos'), (snapshot) => {
+                    const dispositivos = snapshot.val();
+                    const agora = Date.now();
+                    
+                    if (!dispositivos) {
+                        seletorDispositivos.innerHTML = '<option value="">Nenhum ESP32 encontrado</option>';
+                        paineisControlo.classList.add('oculto');
+                        visorVersao.innerText = "";
+                        return;
+                    }
+
+                    paineisControlo.classList.remove('oculto');
+                    const nomesDispositivos = Object.keys(dispositivos);
+
+                    nomesDispositivos.forEach(nome => {
+                        let existe = false;
+                        for (let i = 0; i < seletorDispositivos.options.length; i++) {
+                            if (seletorDispositivos.options[i].value === nome) existe = true;
+                        }
+                        if (!existe) {
+                            const opt = document.createElement('option');
+                            opt.value = nome;
+                            opt.text = `🟡 ${nome} (A verificar...)`;
+                            seletorDispositivos.appendChild(opt);
+                        }
+
+                        const uptime = dispositivos[nome].status_uptime || 0;
+                        if (!monitoramentoPlacas[nome]) {
+                            monitoramentoPlacas[nome] = { ultimoUptime: uptime, ultimaVezVisto: agora };
+                        } else if (monitoramentoPlacas[nome].ultimoUptime !== uptime) {
+                            monitoramentoPlacas[nome].ultimoUptime = uptime;
+                            monitoramentoPlacas[nome].ultimaVezVisto = agora;
+                        }
+                    });
+
+                    for (let i = seletorDispositivos.options.length - 1; i >= 0; i--) {
+                        const val = seletorDispositivos.options[i].value;
+                        if (val !== "" && !nomesDispositivos.includes(val)) seletorDispositivos.remove(i);
+                    }
+
+                    if (!dispositivoAtual || !nomesDispositivos.includes(dispositivoAtual)) {
+                        dispositivoAtual = nomesDispositivos[0];
+                        seletorDispositivos.value = dispositivoAtual;
+                        carregarDispositivo(dispositivoAtual);
+                    }
+                });
+
+                setInterval(() => {
+                    const agora = Date.now();
+                    let placaAtualOffline = false;
+
+                    for (let i = 0; i < seletorDispositivos.options.length; i++) {
+                        const opt = seletorDispositivos.options[i];
+                        const nome = opt.value;
+                        if (!nome) continue;
+
+                        const dados = monitoramentoPlacas[nome];
+                        if (dados) {
+                            if (agora - dados.ultimaVezVisto > 18000) { 
+                                if (!opt.text.includes('🔴')) {
+                                    opt.text = `🔴 ${nome} (Offline)`;
+                                    opt.style.color = "#f44336";
+                                    set(ref(db, `chacara/dispositivos/${nome}/status_conexao`), "offline");
+                                }
+                                opt.disabled = true; 
+                                if (nome === dispositivoAtual) placaAtualOffline = true;
+                            } else {
+                                if (!opt.text.includes('🟢')) {
+                                    opt.text = `🟢 ${nome}`;
+                                    opt.style.color = "#04d361";
+                                }
+                                opt.disabled = false;
+                            }
+                        }
+                    }
+
+                    if (placaAtualOffline) {
+                        btnAtualizarOTA.disabled = true;
+                        btnAtualizarOTA.innerText = "Placa Offline 📵";
+                        btnAtualizarOTA.style.backgroundColor = "#555";
+                    } else if (btnAtualizarOTA.innerText === "Placa Offline 📵") {
+                        btnAtualizarOTA.disabled = false;
+                        btnAtualizarOTA.innerText = "Atualizar Placa com Selecionado";
+                        btnAtualizarOTA.style.backgroundColor = "#ff9800";
+                    }
+                }, 2000);
+
+                seletorDispositivos.addEventListener('change', (e) => {
+                    dispositivoAtual = e.target.value;
+                    carregarDispositivo(dispositivoAtual);
+                });
+
+                function carregarDispositivo(deviceId) {
+                    if (cancelarEscutaOTA) cancelarEscutaOTA();
+                    if (cancelarEscutaVersao) cancelarEscutaVersao(); 
+                    if (cancelarEscutaModelo) cancelarEscutaModelo(); 
+
+                    modeloDetectado = null;
+                    visorVersao.innerText = "Versão: A procurar...";
+                    visorVersao.style.color = "#a8a8b3";
+                    visorModelo.innerText = "A aguardar placa...";
+                    visorModelo.classList.remove('visor-erro');
+                    
+                    btnAtualizarOTA.innerText = "Atualizar Placa com Selecionado";
+                    btnAtualizarOTA.disabled = false;
+                    ultimoModeloRenderizado = null; 
+
+                    const caminhoBase = `chacara/dispositivos/${deviceId}`;
+
+                    cancelarEscutaModelo = onValue(ref(db, `${caminhoBase}/modelo_hardware`), (snapshot) => {
+                        modeloDetectado = snapshot.val();
+                        if(modeloDetectado) {
+                            visorModelo.innerText = modeloDetectado;
+                            visorModelo.classList.remove('visor-erro');
+                            
+                            if (ultimoModeloRenderizado !== modeloDetectado) {
+                                ultimoModeloRenderizado = modeloDetectado;
+                                carregarCatalogoGithub(modeloDetectado); 
+                            }
+                        } else {
+                            visorModelo.innerText = "Não reportado!";
+                            visorModelo.classList.add('visor-erro');
+                            seletorCatalogo.innerHTML = '<option value="">Erro de hardware</option>';
+                            ultimoModeloRenderizado = null;
+                        }
+                    });
+
+                    cancelarEscutaVersao = onValue(ref(db, `${caminhoBase}/versao_atual`), (snapshot) => {
+                        const versao = snapshot.val();
+                        if(versao) {
+                            visorVersao.innerText = `Firmware Ativo: ${versao}`;
+                            visorVersao.style.color = "#04d361";
+                        } else {
+                            visorVersao.innerText = "Firmware Ativo: Desconhecido";
+                            visorVersao.style.color = "#f44336";
+                        }
+                    });
+
+                    cancelarEscutaOTA = onValue(ref(db, `${caminhoBase}/comando_ota`), (snapshot) => {
+                        const estadoOta = snapshot.val();
+                        if (estadoOta === true) {
+                            btnAtualizarOTA.disabled = true;
+                            btnAtualizarOTA.innerText = "A Atualizar Placa... ⏳";
+                            btnAtualizarOTA.style.backgroundColor = "#555";
+                        } else {
+                            if(otaTimeout) clearTimeout(otaTimeout);
+                            const dados = monitoramentoPlacas[dispositivoAtual];
+                            const offline = dados ? (Date.now() - dados.ultimaVezVisto > 18000) : false;
+                            
+                            if(!offline) {
+                                btnAtualizarOTA.disabled = false;
+                                btnAtualizarOTA.innerText = "Atualizar Placa com Selecionado";
+                                btnAtualizarOTA.style.backgroundColor = "#ff9800";
+                            }
+                        }
+                    });
+                }
+
+                btnAtualizarOTA.addEventListener('click', () => {
+                    if(dispositivoAtual && modeloDetectado) {
+                        const urlFirmware = seletorCatalogo.value;
+                        if(!urlFirmware) { alert("Selecione um firmware da lista do GitHub!"); return; }
+                        
+                        const nomeFirmware = seletorCatalogo.options[seletorCatalogo.selectedIndex].text;
+                        const dispositivoSolicitado = dispositivoAtual;
+                        const modeloSolicitado = modeloDetectado;
+                        
+                        if(confirm(`ATENÇÃO - INICIAR OTA
+
+Conta Ativa: ${dadosConta.nome}
+Placa: ${dispositivoSolicitado}
+Hardware: ${modeloSolicitado}
+Firmware: ${nomeFirmware}`)) {
+                            
+                            set(ref(db, `config/arquivos_ota/${modeloSolicitado}`), urlFirmware)
+                            .then(() => set(ref(db, `chacara/dispositivos/${dispositivoSolicitado}/comando_ota`), true))
+                            .then(() => {
+                                if(otaTimeout) clearTimeout(otaTimeout);
+                                otaTimeout = setTimeout(() => {
+                                    set(ref(db, `chacara/dispositivos/${dispositivoSolicitado}/comando_ota`), false).catch((error) => console.error('Falha ao limpar comando OTA:', error));
+                                    alert("⏳ Tempo limite da OTA (45s).
+A placa não confirmou o andamento. Verifique a conexão e o estado do dispositivo antes de tentar novamente.");
+                                }, 45000); 
+                            })
+                            .catch((error) => alert("Erro: " + error));
+                        }
+                    }
+                });
+
+            } catch (error) {
+                alert("Erro ao ligar à conta Firebase.
+Detalhe técnico: " + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
