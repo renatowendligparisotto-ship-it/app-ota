@@ -42,6 +42,6 @@ Como este projeto é um PWA puro (Frontend), não necessita de servidores comple
 4. Clique em **"Atualizar Placa com Selecionado"**. O painel ficará bloqueado durante a transferência (até 45 segundos) e a placa será reiniciada com a nova versão.
 
 ## ⚠️ Requisitos do Firmware no ESP32
-Para que a placa converse com este painel, o seu código C++ no ESP32 precisa de:
-* Biblioteca `Firebase_ESP_Client.h` para ler a flag de OTA.
-* Biblioteca `HTTPUpdate.h` para processar o download do ficheiro a partir do GitHub.
+Para que a placa converse com este painel, o seu código C++ no ESP32 precisa das seguintes bibliotecas instaladas no Arduino IDE:
+* **Firebase Arduino Client Library for ESP8266 and ESP32** (Autor: **Mobizt**) - Essencial para ler a flag de OTA e gerir a ligação segura à base de dados.
+* **HTTPUpdate** (Embutida no pacote base do ESP32) - Para processar o download do ficheiro `.bin` a partir da API do GitHub.
